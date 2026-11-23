@@ -3,13 +3,12 @@ package com.github.noamm9.loader;
 import net.fabricmc.loader.api.*;
 import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.fabricmc.loader.impl.gui.FabricGuiEntry;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
 
 // registered as a language adapter because thats the earliest point fabric runs mod code
 public final class NoammLoader implements LanguageAdapter {
     static final String NAME = "NoammAddons-Loader";
     static final String MOD_ID = "noammaddons";
+    static final LoaderLogger LOGGER = new LoaderLogger(NAME);
 
     public NoammLoader() {
         try {
@@ -24,7 +23,7 @@ public final class NoammLoader implements LanguageAdapter {
     }
 
     private static void crash(String message, Throwable t) {
-        Log.error(LogCategory.GENERAL, "[" + NAME + "] " + message, t);
+        LOGGER.error(message, t);
 
         var provider = FabricLoaderImpl.INSTANCE.tryGetGameProvider();
         if (provider == null || ! provider.displayCrash(t, message)) FabricGuiEntry.displayError(message, t, true);
@@ -32,25 +31,22 @@ public final class NoammLoader implements LanguageAdapter {
     }
 
     private static void load() throws Exception {
-        var loader = FabricLoaderImpl.INSTANCE;
-        if (loader.isDevelopmentEnvironment()) return;
+        var fabricLoader = FabricLoaderImpl.INSTANCE;
+        if (fabricLoader.isDevelopmentEnvironment()) return;
 
-        if (loader.isModLoaded(MOD_ID)) {
-            Log.info(LogCategory.GENERAL, "[%s] %s is already installed in mods, skipping", NAME, MOD_ID);
+        if (fabricLoader.isModLoaded(MOD_ID)) {
+            LOGGER.info(MOD_ID + " is already loaded!");
             return;
         }
 
-        var minecraft = loader.getModContainer("minecraft")
+        var minecraft = fabricLoader.getModContainer("minecraft")
             .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
             .orElseThrow(() -> new NoammLoaderException("Minecraft isn't loaded"));
 
-        var jar = new BuildCache(loader.getConfigDir().resolve("NoammAddons").resolve("loader"), minecraft).resolve();
-        if (jar == null) {
-            Log.warn(LogCategory.GENERAL, "[%s] No NoammAddons build available for %s, starting without it", NAME, minecraft);
-            return;
-        }
+        var jar = new BuildCache(fabricLoader.getConfigDir().resolve("NoammAddons").resolve("loader"), minecraft).resolve();
+        if (jar == null) throw new NoammLoaderException("No NoammAddons build available for " + minecraft);
 
-        new ModInjector(loader).inject(jar);
+        new ModInjector(fabricLoader).inject(jar);
     }
 
     @Override

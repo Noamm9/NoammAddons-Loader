@@ -7,8 +7,6 @@ import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 import net.fabricmc.loader.impl.metadata.DependencyOverrides;
 import net.fabricmc.loader.impl.metadata.VersionOverrides;
 import net.fabricmc.loader.impl.util.SystemProperties;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -51,7 +49,8 @@ final class ModInjector {
         register(containers);
 
         for (ModContainerImpl container : containers) {
-            Log.info(LogCategory.GENERAL, "[%s] Loaded %s %s", NoammLoader.NAME, container.getMetadata().getId(), container.getMetadata().getVersion().getFriendlyString());
+            var metadata = container.getMetadata();
+            NoammLoader.LOGGER.info("Loaded %s %s".formatted(metadata.getId(), metadata.getVersion().getFriendlyString()));
         }
     }
 

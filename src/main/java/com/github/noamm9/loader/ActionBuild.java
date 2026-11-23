@@ -52,4 +52,8 @@ record ActionBuild(String sha, String artifactId, String artifactName, String di
             default -> reader.nextString();
         };
     }
+
+    String shortSha() {
+        return sha.substring(0, Math.min(7, sha.length()));
+    }
 }
