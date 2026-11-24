@@ -7,6 +7,7 @@ import net.fabricmc.loader.impl.gui.FabricGuiEntry;
 // registered as a language adapter because thats the earliest point fabric runs mod code
 public final class NoammLoader implements LanguageAdapter {
     static final String NAME = "NoammAddons-Loader";
+    static final String LOADER_ID = "noammaddons-loader";
     static final String MOD_ID = "noammaddons";
     static final LoaderLogger LOGGER = new LoaderLogger(NAME);
 
@@ -34,11 +35,6 @@ public final class NoammLoader implements LanguageAdapter {
         var fabricLoader = FabricLoaderImpl.INSTANCE;
         if (fabricLoader.isDevelopmentEnvironment()) return;
 
-        if (fabricLoader.isModLoaded(MOD_ID)) {
-            LOGGER.info(MOD_ID + " is already loaded!");
-            return;
-        }
-
         var minecraft = fabricLoader.getModContainer("minecraft")
             .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
             .orElseThrow(() -> new NoammLoaderException("Minecraft isn't loaded"));
@@ -46,7 +42,9 @@ public final class NoammLoader implements LanguageAdapter {
         var jar = new BuildCache(fabricLoader.getConfigDir().resolve("NoammAddons").resolve("loader"), minecraft).resolve();
         if (jar == null) throw new NoammLoaderException("No NoammAddons build available for " + minecraft);
 
-        new ModInjector(fabricLoader).inject(jar);
+        var injector = new ModInjector(fabricLoader);
+        injector.inject(jar);
+        injector.removeInstalled(jar);
     }
 
     @Override

@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "noammaddons-loader",
+  "provides": ["noammaddons"],
   "version": "${version}",
   "name": "NoammAddons Loader",
   "description": "Downloads the latest NoammAddons Action build on every launch and loads it.",

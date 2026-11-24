@@ -9,8 +9,11 @@ import net.fabricmc.loader.impl.metadata.VersionOverrides;
 import net.fabricmc.loader.impl.util.SystemProperties;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 final class ModInjector {
     private final FabricLoaderImpl loader;
@@ -54,12 +57,47 @@ final class ModInjector {
         }
     }
 
+    void removeInstalled(Path activeJar) {
+        for (var candidate : discoverInstalled()) {
+            var jar = candidate.getOriginPaths().getFirst();
+            try {
+                if (! Files.isRegularFile(jar, LinkOption.NOFOLLOW_LINKS) || Files.isSameFile(jar, activeJar)) continue;
+                if (Files.deleteIfExists(jar)) NoammLoader.LOGGER.info("Removed standalone NoammAddons JAR " + jar);
+            }
+            catch (IOException e) {
+                NoammLoader.LOGGER.warn("Could not remove standalone NoammAddons JAR " + jar, e);
+            }
+        }
+    }
+
+    private List<ModCandidateImpl> discoverInstalled() {
+        var mods = loader.getModsDirectory().toPath();
+        try {
+            var discoverer = newDiscoverer();
+            discoverer.addCandidateFinder(new DirectoryModCandidateFinder(mods, false));
+            var disabled = new HashMap<String, Set<ModCandidateImpl>>();
+            var candidates = discoverer.discoverMods(loader, disabled);
+            var otherEnvironments = disabled.getOrDefault(NoammLoader.MOD_ID, Set.of());
+            return Stream.concat(candidates.stream(), otherEnvironments.stream())
+                .filter(candidate -> candidate.isRoot() && candidate.getId().equals(NoammLoader.MOD_ID))
+                .filter(candidate -> Files.isRegularFile(candidate.getOriginPaths().getFirst(), LinkOption.NOFOLLOW_LINKS))
+                .toList();
+        } catch (ModResolutionException | RuntimeException e) {
+            NoammLoader.LOGGER.warn("Could not inspect the mods folder " + mods, e);
+            return List.of();
+        }
+    }
+
+    private ModDiscoverer newDiscoverer() {
+        return new ModDiscoverer(new VersionOverrides(), new DependencyOverrides(loader.getConfigDir()));
+    }
+
     private List<ModCandidateImpl> discover(Path jar) throws NoammLoader.NoammLoaderException {
         var previous = System.getProperty(SystemProperties.ADD_MODS);
         System.setProperty(SystemProperties.ADD_MODS, jar.toAbsolutePath().toString());
 
         try {
-            var discoverer = new ModDiscoverer(new VersionOverrides(), new DependencyOverrides(loader.getConfigDir()));
+            var discoverer = newDiscoverer();
             discoverer.addCandidateFinder(new ArgumentModCandidateFinder(false));
             return discoverer.discoverMods(loader, new HashMap<>());
         }
@@ -76,7 +114,12 @@ final class ModInjector {
         var picked = new LinkedHashMap<String, ModCandidateImpl>();
 
         for (ModCandidateImpl candidate : discovered) {
-            if (candidate.isBuiltin() || loader.isModLoaded(candidate.getId())) continue;
+            if (candidate.isBuiltin()) continue;
+
+            var loadedId = loader.getModContainer(candidate.getId()).map(mod -> mod.getMetadata().getId());
+            var replacesAlias = candidate.getId().equals(NoammLoader.MOD_ID) && loadedId.filter(NoammLoader.LOADER_ID::equals).isPresent();
+            if (loadedId.isPresent() && ! replacesAlias) continue;
+
             picked.merge(candidate.getId(), candidate, (a, b) -> a.getVersion().compareTo(b.getVersion()) >= 0 ? a : b);
         }
 
