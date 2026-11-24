@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "noammaddons-loader",
+  "name": "${name}",
+  "id": "${id}",
   "version": "${version}",
-  "name": "NoammAddons Loader",
-  "description": "Downloads the latest NoammAddons Action build on every launch and loads it.",
+  "description": "${desc}",
   "authors": [
     "Noamm"
   ],
@@ -14,14 +14,8 @@
     "issues": "https://github.com/Noamm9/NoammAddons/issues"
   },
   "license": "BSD-3",
-  "environment": "client",
   "languageAdapters": {
-    "noammaddons-loader": "com.github.noamm9.loader.NoammLoader"
+    "${id}": "com.github.noamm9.loader.NoammLoader"
   },
-  "depends": {
-    "fabricloader": ">=${loader_version}",
-    "java": ">=25",
-    "fabric-api": "*",
-    "fabric-language-kotlin": "*"
   }
 }
