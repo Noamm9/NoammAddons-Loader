@@ -26,7 +26,9 @@ public final class NoammLoader implements LanguageAdapter {
         LOGGER.error(message, t);
 
         var provider = FabricLoaderImpl.INSTANCE.tryGetGameProvider();
-        if (provider == null || ! provider.displayCrash(t, message)) FabricGuiEntry.displayError(message, t, true);
+        if (provider == null || ! provider.displayCrash(t, message)) {
+            FabricGuiEntry.displayError(message, t, true);
+        }
         System.exit(1);
     }
 
