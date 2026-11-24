@@ -8,9 +8,12 @@ import net.fabricmc.loader.impl.gui.FabricGuiEntry;
 public final class NoammLoader implements LanguageAdapter {
     static final String NAME = "NoammAddons-Loader";
     static final String MOD_ID = "noammaddons";
+    static final String STUB_KEY = "noammaddons-loader:stub";
     static final LoaderLogger LOGGER = new LoaderLogger(NAME);
 
     public NoammLoader() {
+        var startTime = System.currentTimeMillis();
+
         try {
             load();
         }
@@ -20,6 +23,8 @@ public final class NoammLoader implements LanguageAdapter {
         catch (Throwable t) {
             crash("Failed to load NoammAddons into Fabric Loader " + FabricLoaderImpl.VERSION, t);
         }
+
+        LOGGER.info("finished in %sms".formatted(System.currentTimeMillis() - startTime));
     }
 
     private static void crash(String message, Throwable t) {
@@ -36,19 +41,23 @@ public final class NoammLoader implements LanguageAdapter {
         var fabricLoader = FabricLoaderImpl.INSTANCE;
         if (fabricLoader.isDevelopmentEnvironment()) return;
 
-        if (fabricLoader.isModLoaded(MOD_ID)) {
-            LOGGER.info(MOD_ID + " is already loaded!");
-            return;
+        var installed = fabricLoader.getModContainer(MOD_ID);
+        if (installed.isPresent() && ! isStub(installed.get())) {
+            throw new NoammLoaderException("NoammAddons is already in the mods folder");
         }
 
-        var minecraft = fabricLoader.getModContainer("minecraft")
+        var mc = fabricLoader.getModContainer("minecraft")
             .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
             .orElseThrow(() -> new NoammLoaderException("Minecraft isn't loaded"));
 
-        var jar = new BuildCache(fabricLoader.getConfigDir().resolve("NoammAddons").resolve("loader"), minecraft).resolve();
-        if (jar == null) throw new NoammLoaderException("No NoammAddons build available for " + minecraft);
+        var jar = new BuildCache(fabricLoader.getConfigDir().resolve("NoammAddons").resolve("loader"), mc).resolve();
+        if (jar == null) throw new NoammLoaderException("No NoammAddons build available for " + mc);
 
         new ModInjector(fabricLoader).inject(jar);
+    }
+
+    static boolean isStub(ModContainer mod) {
+        return mod.getMetadata().containsCustomValue(STUB_KEY);
     }
 
     @Override

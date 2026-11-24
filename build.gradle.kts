@@ -23,4 +23,14 @@ tasks.processResources {
     filesMatching("fabric.mod.json") { expand(props) }
 }
 
-tasks.jar { from("LICENSE") }
+val stubJar = tasks.register<Jar>(name) {
+    description = "bundles dummy mod jar"
+    archiveFileName = "noammaddons-stub.jar"
+    destinationDirectory = layout.buildDirectory.dir("stub")
+    from("src/stub/resources")
+}
+
+tasks.jar {
+    from(stubJar) { into("META-INF/jars") }
+    from("LICENSE")
+}

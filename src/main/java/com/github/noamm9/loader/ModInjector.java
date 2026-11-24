@@ -76,7 +76,9 @@ final class ModInjector {
         var picked = new LinkedHashMap<String, ModCandidateImpl>();
 
         for (ModCandidateImpl candidate : discovered) {
-            if (candidate.isBuiltin() || loader.isModLoaded(candidate.getId())) continue;
+            if (candidate.isBuiltin()) continue;
+            // the nested stub makes MOD_ID always "loaded" so it just needs to be replaced
+            if (! candidate.getId().equals(NoammLoader.MOD_ID) && loader.isModLoaded(candidate.getId())) continue;
             picked.merge(candidate.getId(), candidate, (a, b) -> a.getVersion().compareTo(b.getVersion()) >= 0 ? a : b);
         }
 
@@ -99,6 +101,7 @@ final class ModInjector {
         }
 
         var mods = new ArrayList<>(loader.getModsInternal());
+        mods.removeIf(NoammLoader::isStub);
         mods.addAll(containers);
         modsField.set(loader, mods);
     }

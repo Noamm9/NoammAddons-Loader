@@ -17,7 +17,9 @@
   "languageAdapters": {
     "${id}": "com.github.noamm9.loader.NoammLoader"
   },
-  "breaks": {
-    "noammaddons": "*"
-  }
+  "jars": [
+    {
+      "file": "META-INF/jars/noammaddons-stub.jar"
+    }
+  ]
 }

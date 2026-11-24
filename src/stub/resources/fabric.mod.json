@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "noammaddons",
+  "version": "999.0.0",
+  "description": "empty mod that lets mods depending on NoammAddons resolve",
+  "custom": {
+    "noammaddons-loader:stub": true
+  }
+}
